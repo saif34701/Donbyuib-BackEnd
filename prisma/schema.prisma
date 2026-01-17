@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+enum DonationStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Admin {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  role      AdminRole @default(ADMIN)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+}
+
+model Association {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  logoUrl     String?
+  campaigns   Campaign[]
+}
+
+model Campaign {
+  id             String       @id @default(uuid())
+  title          String
+  description    String
+  goalAmount     Int
+  currentAmount  Int          @default(0)
+  isActive       Boolean      @default(true)
+  associationId String
+  association   Association  @relation(fields: [associationId], references: [id])
+  donations      Donation[]
+  createdAt      DateTime     @default(now())
+  clictopayUserName String?  
+  clictopayPassword String?
+}
+
+model Donation {
+  id          String          @id @default(uuid())
+  campaignId  String
+  campaign    Campaign        @relation(fields: [campaignId], references: [id])
+  amount      Int
+  donorName   String
+  donorEmail  String
+  status      DonationStatus  @default(PENDING)
+  paymentRef  String?
+  createdAt   DateTime        @default(now())
+  clictopayOrderId  String?
+}
