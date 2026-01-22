@@ -6,6 +6,7 @@ import { AuthModule } from 'src/auth/auth.module';
 @Module({
   imports: [AuthModule],
   providers: [CampaignsService],
-  controllers: [CampaignsController]
+  controllers: [CampaignsController],
+  exports: [CampaignsService]
 })
 export class CampaignsModule {}

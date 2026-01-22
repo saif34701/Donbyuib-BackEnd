@@ -34,13 +34,14 @@ model Association {
   description String?
   logoUrl     String?
   campaigns   Campaign[]
+  mail        String?
+  phone       String?
 }
 
 model Campaign {
   id             String       @id @default(uuid())
   title          String
   description    String
-  goalAmount     Int
   currentAmount  Int          @default(0)
   isActive       Boolean      @default(true)
   associationId String
@@ -63,3 +64,5 @@ model Donation {
   createdAt   DateTime        @default(now())
   clictopayOrderId  String?
 }
+
+

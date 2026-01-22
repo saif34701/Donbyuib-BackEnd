@@ -7,17 +7,11 @@ import { CreateDonationDto } from './dto/create_donation.dto';
 export class DonationsController {
   constructor(private donations: DonationsService) {}
 
-  /* =====================
-   * PUBLIC
-   * ===================== */
-
 @Post('donations')
 create(@Body() body: CreateDonationDto) {
   return this.donations.create(body);
 }
-  /* =====================
-   * ADMIN
-   * ===================== */
+
 
   @UseGuards(JwtAuthGuard)
   @Get('admin/donations')

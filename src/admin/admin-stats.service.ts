@@ -43,13 +43,9 @@ export class AdminStatsService {
     return campaigns.map((c) => ({
       id: c.id,
       title: c.title,
-      goalAmount: c.goalAmount,
       currentAmount: c.currentAmount,
       donationCount: c._count.donations,
-      progressPercent:
-        c.goalAmount > 0
-          ? Math.round((c.currentAmount / c.goalAmount) * 100)
-          : 0,
+      progressPercent: 0,
       isActive: c.isActive,
     }));
   }

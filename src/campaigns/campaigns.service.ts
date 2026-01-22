@@ -8,7 +8,6 @@ export class CampaignsService {
   create(data: {
     title: string;
     description: string;
-    goalAmount: number;
     associationId: string;
   }) {
     return this.prisma.campaign.create({
@@ -18,13 +17,11 @@ export class CampaignsService {
 
   findAll() {
     return this.prisma.campaign.findMany({
-  where: {
-    isActive: true,
-  },
-  include: {
-    association: true,
-  },
-});
+      include: {
+        association: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
   findOne(id: string) {
   return this.prisma.campaign.findUnique({
@@ -38,6 +35,16 @@ export class CampaignsService {
     return this.prisma.campaign.update({
       where: { id },
       data: { isActive },
+    });
+  }
+
+  async delete(id: string) {
+    await this.prisma.donation.deleteMany({
+      where: { campaignId: id },
+    });
+    
+    return this.prisma.campaign.delete({
+      where: { id },
     });
   }
 }

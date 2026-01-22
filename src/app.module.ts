@@ -5,7 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { DonationsModule } from './donations/donations.module';
 import { AdminModule } from './admin/admin.module';
-import { PaymentsModule } from './payments/payments.module';
+import { AssociationsModule } from './associations/associations.module';
 
 @Module({
   imports: [
@@ -17,7 +17,8 @@ import { PaymentsModule } from './payments/payments.module';
     AdminModule,
     CampaignsModule,
     DonationsModule,
-    PaymentsModule,
+    
+    AssociationsModule,
   ],
 })
 export class AppModule {}
