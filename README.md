@@ -273,6 +273,55 @@ The payment module structure has been implemented with all necessary database mo
 
 The current implementation provides a solid foundation, but requires hands-on testing and refinement with actual ClicToPay API access.
 
+## Payment component (implemented)
+
+The backend includes an implemented payment controller and service that handle donation registration, redirecting to the payment page, and verifying payment results. This section documents the currently available endpoints and notes for using the payment component that complements the ClicToPay integration plan above.
+
+### Endpoints
+- `GET /payment/test` — health/test endpoint; returns a small JSON with available payment endpoints.
+- `POST /payment/register` — initiate a donation + payment flow. Request body:
+  ```json
+  {
+    "campaignId": "<campaign-id>",
+    "amount": 1000,
+    "donorName": "John Doe",
+    "donorEmail": "john@example.com"
+  }
+  ```
+  The endpoint creates a donation record with status `PENDING`, calls the payment service to generate a payment URL, and redirects the client to that URL.
+- `GET /payment/callback?donationId=xxx` — payment gateway callback/redirect endpoint. The controller verifies the payment using the donationId and redirects the user to the frontend result pages depending on status:
+  - success: `${FRONTEND_URL}/payment/success?donationId=...`
+  - failed: `${FRONTEND_URL}/payment/failed?donationId=...`
+  - pending: `${FRONTEND_URL}/payment/pending?donationId=...`
+  - error: `${FRONTEND_URL}/payment/error?donationId=...`
+- `GET /payment/status/:donationId` — manual check of payment status (returns the verification result from the payment service).
+
+### Example (register)
+Example curl to start a payment flow (server will redirect to the payment URL):
+
+```bash
+curl -v -X POST http://localhost:3000/payment/register \
+  -H "Content-Type: application/json" \
+  -d '{"campaignId":"<id>","amount":1000,"donorName":"Jane","donorEmail":"jane@example.com"}'
+```
+
+### Environment variables used by payment module
+- `FRONTEND_URL` — required for redirecting users back to the frontend after payment (e.g. `http://localhost:3000` or your deployed frontend URL).
+- `CLICTOPAY_API_URL`, `CLICTOPAY_MERCHANT_ID`, `CLICTOPAY_API_KEY` — ClicToPay configuration (already documented above).
+- `CLICTOPAY_CALLBACK_URL` — public callback URL for webhooks/redirects.
+
+### Notes & developer guidance
+- The controller's `POST /payment/register` currently redirects the HTTP response directly to the generated payment URL. For single-page apps you may want to return the URL as JSON instead.
+- The callback endpoint expects a `donationId` query parameter and will call the payment service `verifyPayment(donationId)`. Ensure the donation records store the ClicToPay order id and related metadata so verification is possible.
+- The controller uses `FRONTEND_URL` to build redirect URLs. Make sure this is set in your `.env` or environment.
+- The `GET /payment/status/:donationId` endpoint is useful for polling payment state from the frontend.
+- Security: verify signatures on callbacks, ensure idempotent processing of webhooks, and log transactions for audits.
+
+### Next steps
+- Complete payment service integration with ClicToPay sandbox credentials and run full end-to-end tests.
+- Add unit and e2e tests for the register and callback flows.
+- Optionally adjust controller parameter decorators (e.g., use `@Param` for `status/:donationId`) and improve error responses.
+
 ## Development
 
 ### Project Structure
