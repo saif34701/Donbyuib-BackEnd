@@ -6,6 +6,7 @@ import { CampaignsModule } from './campaigns/campaigns.module';
 import { DonationsModule } from './donations/donations.module';
 import { AdminModule } from './admin/admin.module';
 import { AssociationsModule } from './associations/associations.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { AssociationsModule } from './associations/associations.module';
     AdminModule,
     CampaignsModule,
     DonationsModule,
-    
+    PaymentModule,
     AssociationsModule,
   ],
 })

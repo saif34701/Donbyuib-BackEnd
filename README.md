@@ -263,6 +263,16 @@ Add ClicToPay environment variables:
 - Payment retry mechanism for failed transactions
 - Real-time payment status updates via websockets
 
+### Note on Payment Module Status
+The payment module structure has been implemented with all necessary database models, controllers, and service scaffolding in place. However, due to lack of access to ClicToPay API credentials and testing environment, the actual payment integration has not been fully tested. The development team will need to:
+- Obtain ClicToPay API credentials (sandbox and production)
+- Complete the payment flow implementation in the payment service
+- Test the full payment cycle including callbacks and webhooks
+- Verify the donation status updates and campaign amount calculations
+- Ensure proper error handling and retry mechanisms
+
+The current implementation provides a solid foundation, but requires hands-on testing and refinement with actual ClicToPay API access.
+
 ## Development
 
 ### Project Structure
