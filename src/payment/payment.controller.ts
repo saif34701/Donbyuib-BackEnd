@@ -1,26 +1,13 @@
-import { Body, Controller, Get, Post, Query, Res } from "@nestjs/common";
+import { Body, Controller, Get, Post, Param, Res, Query } from '@nestjs/common';
 import type { Response } from 'express';
-import { PaymentService } from "./payment.service";
+import { PaymentService } from './payment.service';
 
-@Controller('payment')
+@Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  @Get('test')
-  test() {
-    console.log('=== TEST GET ENDPOINT HIT ===');
-    return { 
-      message: 'Payment controller is working!', 
-      timestamp: new Date(),
-      endpoints: {
-        register: 'POST /payment/register',
-        callback: 'GET /payment/callback?donationId=xxx'
-      }
-    };
-  }
-
-  @Post('register')
-  async register(
+  @Post('create-donation-and-pay')
+  async createDonationAndPay(
     @Body()
     body: {
       campaignId: string;
@@ -28,28 +15,35 @@ export class PaymentController {
       donorName: string;
       donorEmail: string;
     },
-    @Res() res: Response,
   ) {
-    console.log('=== PAYMENT REGISTER ENDPOINT HIT ===');
+    console.log('=== PAYMENT CREATE ENDPOINT HIT ===');
     console.log('Request body:', JSON.stringify(body, null, 2));
-    
+
     try {
       const result = await this.paymentService.createDonationAndPay(body);
       console.log('Payment URL generated:', result.paymentUrl);
-      
-      // Redirect to ClicToPay payment page
-      return res.redirect(result.paymentUrl);
+
+      return result;
     } catch (error) {
       console.log('=== ERROR IN CONTROLLER ===');
       console.log('Error message:', error.message);
-      console.log('Error stack:', error.stack);
-      
-      // Return error as JSON instead of redirecting
-      return res.status(error.status || 500).json({
-        statusCode: error.status || 500,
-        message: error.message,
-        error: error.name
-      });
+      throw error;
+    }
+  }
+
+  @Get('verify/:donationId')
+  async verifyPayment(@Param('donationId') donationId: string) {
+    console.log('=== VERIFY PAYMENT ENDPOINT HIT ===');
+    console.log('Donation ID:', donationId);
+
+    try {
+      const result = await this.paymentService.verifyPayment(donationId);
+      console.log('Payment verification result:', result);
+      return result;
+    } catch (error) {
+      console.log('=== ERROR IN VERIFY ===');
+      console.log('Error:', error.message);
+      throw error;
     }
   }
 
@@ -60,38 +54,22 @@ export class PaymentController {
   ) {
     console.log('=== PAYMENT CALLBACK ENDPOINT HIT ===');
     console.log('Donation ID:', donationId);
-    
+
     try {
       const result = await this.paymentService.verifyPayment(donationId);
-      
       console.log('Payment verification result:', result);
-      
-      // Redirect based on payment status
-      if (result.status === 'PAID') {
-        // Redirect to success page
-        return res.redirect(`${process.env.FRONTEND_URL}/payment/success?donationId=${donationId}`);
-      } else if (result.status === 'FAILED') {
-        // Redirect to failure page
-        return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?donationId=${donationId}`);
-      } else {
-        // Redirect to pending page
-        return res.redirect(`${process.env.FRONTEND_URL}/payment/pending?donationId=${donationId}`);
-      }
+
+      // Redirect to frontend payment return page
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/return?donationId=${donationId}`,
+      );
     } catch (error) {
       console.log('=== ERROR IN CALLBACK ===');
       console.log('Error:', error.message);
-      
-      // Redirect to error page
-      return res.redirect(`${process.env.FRONTEND_URL}/payment/error?donationId=${donationId}`);
-    }
-  }
 
-  // Optional: Endpoint to check payment status manually
-  @Get('status/:donationId')
-  async checkStatus(@Query('donationId') donationId: string) {
-    console.log('=== CHECK PAYMENT STATUS ===');
-    console.log('Donation ID:', donationId);
-    
-    return this.paymentService.verifyPayment(donationId);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/return?donationId=${donationId}`,
+      );
+    }
   }
 }

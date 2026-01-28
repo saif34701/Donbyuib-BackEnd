@@ -62,19 +62,21 @@ export class PaymentService {
     formData.append('amount', (donation.amount * 1000).toString());
     formData.append('language', 'fr');
     formData.append('currency', '788');
-    formData.append('orderNumber', donation.id);
+    formData.append('orderNumber', `${Date.now()}`);
     formData.append('userName', campaign.clictopayUserName);
     formData.append('password', campaign.clictopayPassword);
-    formData.append('returnUrl', `${process.env.API_URL}/payment/callback?donationId=${donation.id}`);
-
+    formData.append(
+      'returnUrl',
+      `${process.env.API_URL}/payments/callback?donationId=${donation.id}`,
+    );
     console.log('ClicToPay payload:', {
       amount: donation.amount * 1000,
       language: 'fr',
       currency: '788',
-      orderNumber: donation.id,
+      orderNumber: `${Date.now()}`,
       userName: campaign.clictopayUserName,
       password: '***HIDDEN***',
-      returnUrl: `${process.env.API_URL}/payment/callback?donationId=${donation.id}`
+      returnUrl: `${process.env.API_URL}/payments/callback?donationId=${donation.id}`,
     });
 
     let response;
@@ -82,13 +84,13 @@ export class PaymentService {
     try {
       console.log('Calling ClicToPay TEST API...');
       response = await axios.post(
-        'https://test.clictopay.com/payment/rest/register.do', // TEST URL
+        'https://ipay.clictopay.com/payment/rest/register.do', // TEST URL
         formData.toString(),
-        { 
+        {
           httpsAgent: this.httpsAgent,
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
         },
       );
       console.log('ClicToPay response:', response.data);
@@ -103,7 +105,9 @@ export class PaymentService {
     // Check for error in response
     if (response.data?.errorCode && response.data.errorCode !== '0') {
       console.log('ERROR: ClicToPay returned error:', response.data);
-      throw new BadRequestException(`ClicToPay error: ${response.data.errorMessage || 'Registration failed'}`);
+      throw new BadRequestException(
+        `ClicToPay error: ${response.data.errorMessage || 'Registration failed'}`,
+      );
     }
 
     if (!response.data?.formUrl || !response.data?.orderId) {
@@ -124,90 +128,94 @@ export class PaymentService {
       paymentUrl: response.data.formUrl,
     };
   }
-  
+
   async verifyPayment(donationId: string) {
-    console.log('=== VERIFY PAYMENT START ===');
-    console.log('Donation ID:', donationId);
+  console.log('=== VERIFY PAYMENT START ===');
+  console.log('Donation ID:', donationId);
 
-    const donation = await this.prisma.donation.findUnique({
-      where: { id: donationId },
-      include: { campaign: true },
-    });
+  const donation = await this.prisma.donation.findUnique({
+    where: { id: donationId },
+    include: { campaign: true },
+  });
 
-    if (!donation || !donation.clictopayOrderId) {
-      throw new BadRequestException('Invalid donation');
-    }
-
-    const formData = new URLSearchParams();
-    formData.append('orderId', donation.clictopayOrderId);
-    formData.append('userName', donation.campaign.clictopayUserName ?? '');
-    formData.append('password', donation.campaign.clictopayPassword ?? '');
-
-    console.log('Checking payment status with ClicToPay TEST...');
-
-    let response;
-
-    try {
-      response = await axios.post(
-        'https://test.clictopay.com/payment/rest/getOrderStatus.do', // TEST URL
-        formData.toString(),
-        { 
-          httpsAgent: this.httpsAgent,
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        },
-      );
-      console.log('ClicToPay status response:', response.data);
-    } catch (err) {
-      console.log('ERROR: ClicToPay status check failed:', err.message);
-      throw new BadRequestException('ClicToPay status check failed');
-    }
-
-    const errorCode = response.data?.ErrorCode;
-    const orderStatus = response.data?.OrderStatus;
-
-    console.log('Payment status:', { errorCode, orderStatus });
-
-    if (errorCode === '0') {
-      if (orderStatus === '2') {
-        await this.prisma.donation.update({
-          where: { id: donation.id },
-          data: { status: 'PAID' },
-        });
-
-        await this.prisma.campaign.update({
-          where: { id: donation.campaignId },
-          data: {
-            currentAmount: {
-              increment: donation.amount
-            }
-          }
-        });
-
-        console.log('Payment PAID - Campaign amount updated');
-        return { status: 'PAID', message: 'Payment successful' };
-      }
-
-      if (orderStatus === '6') {
-        await this.prisma.donation.update({
-          where: { id: donation.id },
-          data: { status: 'FAILED' },
-        });
-
-        console.log('Payment FAILED');
-        return { status: 'FAILED', message: 'Payment refused' };
-      }
-
-      console.log('Payment still PENDING');
-      return { status: 'PENDING', message: 'Payment pending', orderStatus };
-    }
-
-    console.log('Payment verification error:', response.data?.ErrorMessage);
-    return { 
-      status: 'ERROR', 
-      message: response.data?.ErrorMessage || 'Verification error',
-      errorCode 
-    };
+  if (!donation || !donation.clictopayOrderId) {
+    throw new BadRequestException('Invalid donation');
   }
+
+  const formData = new URLSearchParams();
+  formData.append('orderId', donation.clictopayOrderId);
+  formData.append('userName', donation.campaign.clictopayUserName ?? '');
+  formData.append('password', donation.campaign.clictopayPassword ?? '');
+
+  console.log('Checking payment status with ClicToPay TEST...');
+
+  let response;
+
+  try {
+    response = await axios.post(
+      'https://ipay.clictopay.com/payment/rest/getOrderStatus.do',
+      formData.toString(),
+      {
+        httpsAgent: this.httpsAgent,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+    );
+    console.log('ClicToPay status response:', response.data);
+  } catch (err) {
+    console.log('ERROR: ClicToPay status check failed:', err.message);
+    throw new BadRequestException('ClicToPay status check failed');
+  }
+
+  const errorCode = response.data?.ErrorCode;
+  const orderStatus = response.data?.OrderStatus;
+
+  console.log('Payment status:', { errorCode, orderStatus });
+
+  // Convert to numbers for comparison
+  const errorCodeNum = parseInt(String(errorCode), 10);
+  const orderStatusNum = parseInt(String(orderStatus), 10);
+
+  if (errorCodeNum === 0) {
+    if (orderStatusNum === 2) {
+      await this.prisma.donation.update({
+        where: { id: donation.id },
+        data: { status: 'PAID' },
+      });
+
+      await this.prisma.campaign.update({
+        where: { id: donation.campaignId },
+        data: {
+          currentAmount: {
+            increment: donation.amount,
+          },
+        },
+      });
+
+      console.log('Payment PAID - Campaign amount updated');
+      return { status: 'PAID', message: 'Payment successful' };
+    }
+
+    if (orderStatusNum === 6) {
+      await this.prisma.donation.update({
+        where: { id: donation.id },
+        data: { status: 'FAILED' },
+      });
+
+      console.log('Payment FAILED');
+      return { status: 'FAILED', message: 'Payment refused' };
+    }
+
+    console.log('Payment still PENDING');
+    return { status: 'PENDING', message: 'Payment pending', orderStatus };
+  }
+
+  console.log('Payment verification error:', response.data?.ErrorMessage);
+  return {
+    status: 'ERROR',
+    message: response.data?.ErrorMessage || 'Verification error',
+    errorCode,
+  };
+}
 }
