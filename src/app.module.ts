@@ -7,6 +7,7 @@ import { DonationsModule } from './donations/donations.module';
 import { AdminModule } from './admin/admin.module';
 import { AssociationsModule } from './associations/associations.module';
 import { PaymentModule } from './payment/payment.module';
+import { ReclamationsModule } from './reclamations/reclamations.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PaymentModule } from './payment/payment.module';
     DonationsModule,
     PaymentModule,
     AssociationsModule,
+    ReclamationsModule,
   ],
 })
 export class AppModule {}

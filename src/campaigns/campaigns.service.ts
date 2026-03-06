@@ -15,6 +15,20 @@ export class CampaignsService {
     });
   }
 
+  update(
+    id: string,
+    data: {
+      title: string;
+      description: string;
+      associationId: string;
+    },
+  ) {
+    return this.prisma.campaign.update({
+      where: { id },
+      data,
+    });
+  }
+
   findAll() {
     return this.prisma.campaign.findMany({
       include: {

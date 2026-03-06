@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -26,7 +26,7 @@ export class DonationsService {
           amount: data.amount,
           donorName: data.donorName,
           donorEmail: data.donorEmail,
-          status: 'PENDING',
+          status: 'PAID',
         },
       });
 
@@ -48,5 +48,25 @@ export class DonationsService {
       include: { campaign: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findById(id: string) {
+    const donation = await this.prisma.donation.findUnique({
+      where: { id },
+      include: {
+        campaign: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!donation) {
+      throw new NotFoundException('Donation not found');
+    }
+
+    return donation;
   }
 }
